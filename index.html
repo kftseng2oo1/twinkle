@@ -4,375 +4,274 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Twinkle 小幫手</title>
+<title>🏠 實價登錄查詢</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+  html, body { margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif;
-    background: #0a0e27; color: #e4e6f0; font-size: 15px;
-    display: flex; flex-direction: column;
+    background: #f4f6fb; color: #1a2138; font-size: 15px;
+    padding: 0 0 40px;
   }
-  
   header {
-    padding: 12px 16px; background: #1a1f3a;
-    border-bottom: 1px solid #2a3050; flex-shrink: 0;
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white; padding: 20px 16px; padding-top: calc(20px + env(safe-area-inset-top));
   }
-  header h1 { margin: 0; font-size: 17px; color: #ffd700; }
-  header .sub { font-size: 12px; color: #8892b0; margin-top: 2px; }
-  
-  #chat {
-    flex: 1; overflow-y: auto; padding: 16px 12px;
-    -webkit-overflow-scrolling: touch;
+  header h1 { margin: 0; font-size: 20px; }
+  header .sub { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+
+  .panel {
+    background: white; margin: 12px; border-radius: 14px; padding: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   }
-  
-  .msg { margin-bottom: 14px; display: flex; flex-direction: column; }
-  .msg.user { align-items: flex-end; }
-  .msg.assistant { align-items: flex-start; }
-  
-  .bubble {
-    max-width: 88%; padding: 10px 14px; border-radius: 16px;
-    line-height: 1.55; white-space: pre-wrap; word-break: break-word;
-    font-size: 15px;
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
+  select, input {
+    width: 100%; padding: 12px; border: 1px solid #d1d9e6; border-radius: 10px;
+    font-size: 16px; background: #f8fafc; color: #1a2138; -webkit-appearance: none;
   }
-  .user .bubble {
-    background: #ffd700; color: #0a0e27;
-    border-bottom-right-radius: 4px;
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; }
+
+  button.search {
+    width: 100%; padding: 14px; background: #2563eb; color: white;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 600;
+    cursor: pointer; -webkit-appearance: none; margin-top: 4px;
   }
-  .assistant .bubble {
-    background: #1a1f3a; color: #e4e6f0; border: 1px solid #2a3050;
-    border-bottom-left-radius: 4px;
+  button.search:active { background: #1d4ed8; }
+  button.search:disabled { background: #94a3b8; }
+
+  .stats {
+    font-size: 13px; color: #64748b; padding: 4px 16px; display: flex;
+    justify-content: space-between; align-items: center;
   }
-  
-  .tool-call {
-    background: #050816; border: 1px solid #2a3050;
-    border-radius: 8px; padding: 8px 10px; margin-top: 6px;
-    font-size: 12px; color: #64ffda; font-family: ui-monospace, monospace;
-    max-width: 88%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  .stats .cached { color: #16a34a; font-size: 11px; }
+
+  .card {
+    background: white; margin: 0 12px 10px; border-radius: 12px; padding: 14px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05); border-left: 4px solid #2563eb;
   }
-  .tool-call .label { color: #8892b0; margin-bottom: 2px; }
-  .tool-call pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
-  
-  .thinking {
-    color: #8892b0; font-style: italic; font-size: 13px;
-    padding: 4px 14px;
+  .card.special { border-left-color: #f59e0b; }
+  .card .note {
+    margin-top: 8px; font-size: 12px; color: #b45309;
+    background: #fef3c7; padding: 6px 10px; border-radius: 6px; line-height: 1.4;
   }
-  
-  footer {
-    padding: 10px 12px; background: #1a1f3a;
-    border-top: 1px solid #2a3050; flex-shrink: 0;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  .card .addr { font-size: 15px; font-weight: 600; color: #1a2138; margin-bottom: 8px; line-height: 1.4; }
+  .card .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .card .total { font-size: 22px; font-weight: 700; color: #dc2626; }
+  .card .total .unit { font-size: 13px; font-weight: 400; color: #64748b; }
+  .card .perping { font-size: 13px; color: #2563eb; font-weight: 600; }
+  .card .meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .card .tag {
+    font-size: 12px; background: #eff3fb; color: #475569;
+    padding: 3px 8px; border-radius: 6px;
   }
-  .input-row { display: flex; gap: 8px; }
-  textarea {
-    flex: 1; background: #0a0e27; color: #e4e6f0;
-    border: 1px solid #3a4070; padding: 10px 12px; border-radius: 20px;
-    font-size: 16px; -webkit-appearance: none; resize: none;
-    min-height: 40px; max-height: 120px; font-family: inherit;
-    line-height: 1.4;
+
+  .empty, .loading, .error {
+    text-align: center; padding: 40px 20px; color: #64748b; font-size: 14px;
   }
-  button {
-    background: #ffd700; color: #0a0e27; border: none;
-    width: 44px; height: 44px; border-radius: 50%;
-    font-size: 20px; cursor: pointer; flex-shrink: 0;
-    -webkit-appearance: none; font-weight: 600;
+  .error { color: #dc2626; }
+  .spinner {
+    width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #2563eb;
+    border-radius: 50%; margin: 0 auto 12px; animation: spin 0.8s linear infinite;
   }
-  button:disabled { background: #3a4070; color: #8892b0; }
-  
-  .examples {
-    display: flex; gap: 6px; overflow-x: auto; padding: 0 0 8px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .examples::-webkit-scrollbar { display: none; }
-  .example-chip {
-    background: #2a3050; color: #64ffda; border: 1px solid #3a4070;
-    padding: 6px 12px; border-radius: 16px; font-size: 13px;
-    white-space: nowrap; cursor: pointer; flex-shrink: 0;
-  }
-  .example-chip:active { background: #3a4070; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🌟 Twinkle 小幫手</h1>
-  <div class="sub">用中文問,AI 自動查 Twinkle Hub</div>
+  <h1>🏠 實價登錄查詢</h1>
+  <div class="sub">資料來源:Twinkle Hub · 已清洗瘦身</div>
 </header>
 
-<div id="chat">
-  <div class="msg assistant">
-    <div class="bubble">嗨!我可以幫你查詢台灣政府開放資料、地理資訊、政府採購、實價登錄、判決書、立法院議案等等。
-
-直接用中文問我就好,例如:
-• 找台北市信義區的避難所
-• 國防部去年的決標金額前 10 大
-• 紀文惠法官最近的判決</div>
+<div class="panel">
+  <div class="row">
+    <div class="field">
+      <label>縣市</label>
+      <select id="city"></select>
+    </div>
+    <div class="field">
+      <label>行政區</label>
+      <select id="district"><option value="">全部</option></select>
+    </div>
   </div>
+  <div class="field">
+    <label>顯示筆數</label>
+    <select id="limit">
+      <option value="20">20 筆</option>
+      <option value="30">30 筆</option>
+      <option value="50">50 筆</option>
+    </select>
+  </div>
+  <button class="search" id="searchBtn">查詢</button>
 </div>
 
-<footer>
-  <div class="examples" id="examples">
-    <div class="example-chip">高雄市今天有什麼活動</div>
-    <div class="example-chip">台中市的健保藥局</div>
-    <div class="example-chip">立法院本屆民法相關議案</div>
-    <div class="example-chip">附近的寺廟(請給我座標)</div>
-    <div class="example-chip">最近的實價登錄</div>
-  </div>
-  <div class="input-row">
-    <textarea id="input" placeholder="輸入問題..." rows="1"></textarea>
-    <button id="send">➤</button>
-  </div>
-</footer>
+<div class="stats" id="stats"></div>
+<div id="results">
+  <div class="empty">選擇縣市與行政區後點查詢</div>
+</div>
 
 <script>
-var TWINKLE_WORKER = 'https://twinklehub.kftseng2oo1.workers.dev';
-var ARCAR_WORKER = 'https://arcar.kftseng2oo1.workers.dev'; // Claude API proxy
-var MAX_ITERATIONS = 8; // 防無窮迴圈
-var conversationHistory = [];
-var toolsCache = null;
+var WORKER = 'https://twinklehub.kftseng2oo1.workers.dev';
 
-var chatEl = document.getElementById('chat');
-var inputEl = document.getElementById('input');
-var sendBtn = document.getElementById('send');
+// 台灣縣市 → 行政區(精簡常用版,可擴充)
+var TW = {
+  '臺北市': ['中正區','大同區','中山區','松山區','大安區','萬華區','信義區','士林區','北投區','內湖區','南港區','文山區'],
+  '新北市': ['板橋區','新莊區','中和區','永和區','土城區','三重區','蘆洲區','新店區','汐止區','樹林區','三峽區','淡水區','林口區','五股區','泰山區'],
+  '桃園市': ['桃園區','中壢區','平鎮區','八德區','楊梅區','蘆竹區','龜山區','龍潭區','大溪區','大園區'],
+  '臺中市': ['中區','東區','南區','西區','北區','北屯區','西屯區','南屯區','太平區','大里區','霧峰區','烏日區','豐原區','后里區','潭子區','大雅區','沙鹿區','龍井區','梧棲區','清水區'],
+  '臺南市': ['中西區','東區','南區','北區','安平區','安南區','永康區','歸仁區','新化區','善化區','仁德區'],
+  '高雄市': ['新興區','前金區','苓雅區','鹽埕區','鼓山區','旗津區','前鎮區','三民區','楠梓區','小港區','左營區','鳳山區','大寮區','岡山區','鳥松區'],
+  '基隆市': ['仁愛區','信義區','中正區','中山區','安樂區','暖暖區','七堵區'],
+  '新竹市': ['東區','北區','香山區'],
+  '新竹縣': ['竹北市','竹東鎮','新埔鎮','關西鎮','湖口鄉','新豐鄉','芎林鄉'],
+  '苗栗縣': ['苗栗市','頭份市','竹南鎮','後龍鎮','通霄鎮','苑裡鎮'],
+  '彰化縣': ['彰化市','員林市','和美鎮','鹿港鎮','溪湖鎮','二林鎮','田中鎮'],
+  '南投縣': ['南投市','埔里鎮','草屯鎮','竹山鎮','集集鎮'],
+  '雲林縣': ['斗六市','斗南鎮','虎尾鎮','西螺鎮','北港鎮'],
+  '嘉義市': ['東區','西區'],
+  '嘉義縣': ['太保市','朴子市','布袋鎮','大林鎮','民雄鄉'],
+  '屏東縣': ['屏東市','潮州鎮','東港鎮','恆春鎮','內埔鄉'],
+  '宜蘭縣': ['宜蘭市','羅東鎮','蘇澳鎮','頭城鎮','礁溪鄉'],
+  '花蓮縣': ['花蓮市','鳳林鎮','玉里鎮','吉安鄉','新城鄉'],
+  '臺東縣': ['臺東市','成功鎮','關山鎮'],
+  '澎湖縣': ['馬公市','湖西鄉','白沙鄉'],
+  '金門縣': ['金城鎮','金湖鎮','金沙鎮','金寧鄉'],
+  '連江縣': ['南竿鄉','北竿鄉']
+};
 
-// 自動 resize textarea
-inputEl.addEventListener('input', function() {
-  this.style.height = '40px';
-  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+var cityEl = document.getElementById('city');
+var districtEl = document.getElementById('district');
+var limitEl = document.getElementById('limit');
+var searchBtn = document.getElementById('searchBtn');
+var resultsEl = document.getElementById('results');
+var statsEl = document.getElementById('stats');
+
+// 初始化縣市選單
+Object.keys(TW).forEach(function(c) {
+  var opt = document.createElement('option');
+  opt.value = c; opt.textContent = c;
+  cityEl.appendChild(opt);
 });
+cityEl.value = '臺中市'; // 你在台中,預設台中
 
-// 範例 chip 點擊
-document.querySelectorAll('.example-chip').forEach(function(chip) {
-  chip.addEventListener('click', function() {
-    inputEl.value = this.textContent;
-    inputEl.dispatchEvent(new Event('input'));
-    inputEl.focus();
+function updateDistricts() {
+  var city = cityEl.value;
+  districtEl.innerHTML = '<option value="">全部</option>';
+  (TW[city] || []).forEach(function(d) {
+    var opt = document.createElement('option');
+    opt.value = d; opt.textContent = d;
+    districtEl.appendChild(opt);
   });
-});
+}
+cityEl.addEventListener('change', updateDistricts);
+updateDistricts();
 
-function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function fmtPrice(n) {
+  if (!n) return '—';
+  // 元 → 萬元
+  var wan = n / 10000;
+  if (wan >= 10000) return (wan / 10000).toFixed(2) + ' 億';
+  return Math.round(wan).toLocaleString() + ' 萬';
 }
 
-function addMessage(role, text) {
-  var div = document.createElement('div');
-  div.className = 'msg ' + role;
-  div.innerHTML = '<div class="bubble">' + escapeHtml(text) + '</div>';
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
-  return div;
+function fmtPerPing(n) {
+  if (!n) return '';
+  var wan = Math.round(n / 10000 * 10) / 10;
+  return wan + ' 萬/坪';
 }
 
-function addThinking(text) {
-  var div = document.createElement('div');
-  div.className = 'thinking';
-  div.textContent = '⚡ ' + text;
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
-  return div;
-}
-
-function addToolCall(name, args, result) {
-  var div = document.createElement('div');
-  div.className = 'msg assistant';
-  var html = '<div class="tool-call">';
-  html += '<div class="label">🔧 呼叫 ' + escapeHtml(name) + '</div>';
-  html += '<pre>' + escapeHtml(JSON.stringify(args, null, 2)) + '</pre>';
-  if (result !== undefined) {
-    html += '<div class="label" style="margin-top:6px;">📦 結果</div>';
-    var resultStr = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-    if (resultStr.length > 500) resultStr = resultStr.slice(0, 500) + '...(已截斷)';
-    html += '<pre>' + escapeHtml(resultStr) + '</pre>';
+// 建築完成年月 → 屋齡(支援民國年 yyymmdd 或西元)
+function fmtAge(buildDate) {
+  if (!buildDate) return '';
+  var s = String(buildDate).replace(/[^0-9]/g, '');
+  var year = null;
+  if (s.length >= 7) {
+    // 民國 yyymmdd(如 0850612 = 民國85年)
+    var rocY = parseInt(s.slice(0, 3), 10);
+    if (rocY > 0 && rocY < 200) year = rocY + 1911;
+  } else if (s.length >= 6) {
+    var y6 = parseInt(s.slice(0, 2), 10);
+    year = (y6 > 50 ? 1900 : 2000) + y6; // 粗略推測
+  } else if (s.length === 4) {
+    year = parseInt(s, 10);
   }
-  html += '</div>';
-  div.innerHTML = html;
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
+  if (!year) return '';
+  var age = new Date().getFullYear() - year;
+  if (age < 0 || age > 120) return '';
+  return '屋齡 ' + age + ' 年';
 }
 
-// 載入工具清單
-function loadTools() {
-  if (toolsCache) return Promise.resolve(toolsCache);
-  return fetch(TWINKLE_WORKER + '/tools')
+function search() {
+  var city = cityEl.value;
+  var district = districtEl.value;
+  var limit = limitEl.value;
+
+  searchBtn.disabled = true;
+  searchBtn.textContent = '查詢中...';
+  statsEl.innerHTML = '';
+  resultsEl.innerHTML = '<div class="loading"><div class="spinner"></div>正在查詢實價登錄...</div>';
+
+  var qs = '?city=' + encodeURIComponent(city) +
+           '&district=' + encodeURIComponent(district) +
+           '&limit=' + limit;
+
+  fetch(WORKER + '/lvr' + qs)
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data && data.result && data.result.tools) {
-        toolsCache = data.result.tools;
-        return toolsCache;
-      }
-      throw new Error('無法取得工具清單');
-    });
-}
+      searchBtn.disabled = false;
+      searchBtn.textContent = '查詢';
 
-// 把 Twinkle 工具轉成 Claude API 的 tools 格式
-function twinkleToClaudeTools(twinkleTools) {
-  return twinkleTools.map(function(t) {
-    return {
-      name: t.name.replace(/-/g, '_'), // Claude tool 名稱限制
-      description: (t.description || '').slice(0, 1024),
-      input_schema: t.inputSchema || { type: 'object', properties: {} }
-    };
-  });
-}
-
-// 呼叫 Twinkle 工具
-function callTwinkleTool(name, args) {
-  // 還原工具名稱
-  var realName = name.replace(/_/g, '-');
-  // 但 search_datasets 這類本身有底線的要保留 — 我們用映射表
-  var toolMatch = toolsCache.filter(function(t) {
-    return t.name.replace(/-/g, '_') === name;
-  })[0];
-  if (toolMatch) realName = toolMatch.name;
-  
-  return fetch(TWINKLE_WORKER + '/call', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: realName, arguments: args })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    if (data && data.result && data.result.content) {
-      var text = '';
-      data.result.content.forEach(function(c) {
-        if (c.type === 'text') text += c.text + '\n';
-      });
-      return text.trim();
-    }
-    return JSON.stringify(data);
-  });
-}
-
-// 呼叫 Claude API(透過你的 arcar proxy)
-function callClaude(messages, tools) {
-  return fetch(ARCAR_WORKER, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
-      system: '你是台灣資料查詢小幫手,可以使用 Twinkle Hub 的工具查詢台灣政府開放資料、地理資訊、政府採購、實價登錄、判決書、立法院議案等。' +
-              '請用繁體中文回答,簡潔扼要。' +
-              '挑工具時請先讀工具描述,選最適合的 fast-path 工具(例如查實價登錄用 query_rows("lvr-trades", ...) 而不是 search_datasets)。' +
-              '查詢結果太長時請摘要重點,不要全文貼出。',
-      messages: messages,
-      tools: tools
-    })
-  })
-  .then(function(r) { return r.json(); });
-}
-
-// 主對話循環
-function chat(userText) {
-  inputEl.disabled = true;
-  sendBtn.disabled = true;
-  
-  addMessage('user', userText);
-  conversationHistory.push({ role: 'user', content: userText });
-  
-  var thinking = addThinking('載入工具中...');
-  
-  loadTools()
-    .then(function(tools) {
-      var claudeTools = twinkleToClaudeTools(tools);
-      thinking.textContent = '⚡ Claude 思考中...';
-      return iterate(claudeTools, 0);
-    })
-    .catch(function(err) {
-      thinking.remove();
-      addMessage('assistant', '❌ 錯誤:' + err.message);
-    })
-    .then(function() {
-      if (thinking.parentNode) thinking.remove();
-      inputEl.disabled = false;
-      sendBtn.disabled = false;
-      inputEl.focus();
-    });
-}
-
-function iterate(claudeTools, depth) {
-  if (depth >= MAX_ITERATIONS) {
-    addMessage('assistant', '⚠️ 達到最大查詢次數,請重新提問或縮小範圍');
-    return Promise.resolve();
-  }
-  
-  return callClaude(conversationHistory, claudeTools)
-    .then(function(response) {
-      if (!response || !response.content) {
-        throw new Error('Claude 沒有回應:' + JSON.stringify(response));
-      }
-      
-      // 收集本輪的文字與工具呼叫
-      var textParts = [];
-      var toolUses = [];
-      response.content.forEach(function(block) {
-        if (block.type === 'text') textParts.push(block.text);
-        if (block.type === 'tool_use') toolUses.push(block);
-      });
-      
-      // 顯示 Claude 的文字回應
-      if (textParts.length > 0) {
-        addMessage('assistant', textParts.join('\n'));
-      }
-      
-      // 把 assistant 的回應加進歷史
-      conversationHistory.push({ role: 'assistant', content: response.content });
-      
-      // 如果沒有工具呼叫,結束
-      if (toolUses.length === 0) {
+      if (!data.success) {
+        resultsEl.innerHTML = '<div class="error">❌ ' +
+          (data.message || '查詢失敗') + '<br><small>' +
+          (data.error || '') + '</small></div>';
         return;
       }
-      
-      // 執行所有工具呼叫
-      var toolResults = [];
-      var promise = Promise.resolve();
-      toolUses.forEach(function(tu) {
-        promise = promise.then(function() {
-          return callTwinkleTool(tu.name, tu.input)
-            .then(function(result) {
-              addToolCall(tu.name, tu.input, result);
-              toolResults.push({
-                type: 'tool_result',
-                tool_use_id: tu.id,
-                content: result
-              });
-            })
-            .catch(function(err) {
-              addToolCall(tu.name, tu.input, '錯誤:' + err.message);
-              toolResults.push({
-                type: 'tool_result',
-                tool_use_id: tu.id,
-                content: '錯誤:' + err.message,
-                is_error: true
-              });
-            });
-        });
+
+      if (!data.results || data.results.length === 0) {
+        resultsEl.innerHTML = '<div class="empty">查無資料,試試其他行政區</div>';
+        return;
+      }
+
+      statsEl.innerHTML = '<span>共 ' + data.count + ' 筆</span>' +
+        (data._cached ? '<span class="cached">⚡ 快取</span>' : '');
+
+      var html = '';
+      data.results.forEach(function(r) {
+        html += '<div class="card' + (r.isSpecial ? ' special' : '') + '">';
+        html += '<div class="addr">' + (r.address || '地址未提供') + '</div>';
+        html += '<div class="price-row">';
+        html += '<span class="total">' + fmtPrice(r.totalPrice) + '<span class="unit"> 元</span></span>';
+        if (r.pricePerPing) html += '<span class="perping">' + fmtPerPing(r.pricePerPing) + '</span>';
+        html += '</div>';
+        html += '<div class="meta">';
+        if (r.type)      html += '<span class="tag">' + r.type + '</span>';
+        if (r.layout)    html += '<span class="tag">' + r.layout + '</span>';
+        if (r.areaPing)  html += '<span class="tag">' + r.areaPing + ' 坪</span>';
+        if (r.floor)     html += '<span class="tag">' + r.floor +
+                                  (r.totalFloor ? '/' + r.totalFloor : '') + '</span>';
+        if (r.buildDate) html += '<span class="tag">' + fmtAge(r.buildDate) + '</span>';
+        if (r.tradeDate) html += '<span class="tag">' + r.tradeDate + '</span>';
+        if (r.hasElevator) html += '<span class="tag">電梯' + r.hasElevator + '</span>';
+        html += '</div>';
+        // 特殊交易備註(親友交易/急買急賣/含增建等)
+        if (r.isSpecial) {
+          html += '<div class="note">⚠️ ' + r.note + '</div>';
+        }
+        html += '</div>';
       });
-      
-      return promise.then(function() {
-        // 把工具結果加進歷史,繼續下一輪
-        conversationHistory.push({ role: 'user', content: toolResults });
-        return iterate(claudeTools, depth + 1);
-      });
+      resultsEl.innerHTML = html;
+    })
+    .catch(function(err) {
+      searchBtn.disabled = false;
+      searchBtn.textContent = '查詢';
+      resultsEl.innerHTML = '<div class="error">❌ 連線錯誤:' + err.message + '</div>';
     });
 }
 
-sendBtn.addEventListener('click', function() {
-  var text = inputEl.value.trim();
-  if (!text) return;
-  inputEl.value = '';
-  inputEl.style.height = '40px';
-  chat(text);
-});
-
-inputEl.addEventListener('keydown', function(e) {
-  // Enter 送出(Shift+Enter 換行)
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendBtn.click();
-  }
-});
+searchBtn.addEventListener('click', search);
 </script>
 
 </body>
