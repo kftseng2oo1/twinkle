@@ -4,371 +4,375 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Twinkle Hub 探索器</title>
+<title>Twinkle 小幫手</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif;
-    margin: 0; padding: 12px; background: #0a0e27; color: #e4e6f0;
-    min-height: 100vh; font-size: 15px;
-  }
-  h1 { font-size: 18px; margin: 0 0 4px; color: #ffd700; }
-  .sub { color: #8892b0; font-size: 12px; margin-bottom: 14px; }
-  
-  .search-bar {
-    position: sticky; top: 0; background: #0a0e27; padding: 8px 0;
-    z-index: 10; margin-bottom: 8px;
-  }
-  .search-bar input {
-    width: 100%; background: #1a1f3a; color: #e4e6f0;
-    border: 1px solid #3a4070; padding: 10px 12px; border-radius: 8px;
-    font-size: 16px; -webkit-appearance: none;
+    background: #0a0e27; color: #e4e6f0; font-size: 15px;
+    display: flex; flex-direction: column;
   }
   
-  .group {
-    background: #1a1f3a; border-radius: 10px; padding: 4px;
-    margin-bottom: 10px; border: 1px solid #2a3050;
+  header {
+    padding: 12px 16px; background: #1a1f3a;
+    border-bottom: 1px solid #2a3050; flex-shrink: 0;
   }
-  .group-header {
-    padding: 10px 12px; font-weight: 600; color: #64ffda;
-    font-size: 13px; display: flex; justify-content: space-between;
-  }
-  .group-header .count { color: #8892b0; font-weight: 400; }
+  header h1 { margin: 0; font-size: 17px; color: #ffd700; }
+  header .sub { font-size: 12px; color: #8892b0; margin-top: 2px; }
   
-  .tool {
-    background: #0f1430; border-radius: 6px; padding: 10px 12px;
-    margin: 4px; cursor: pointer; border: 1px solid transparent;
-    transition: border-color 0.15s;
-  }
-  .tool:active { border-color: #64ffda; }
-  .tool-name { font-size: 13px; color: #64ffda; font-family: ui-monospace, monospace; }
-  .tool-desc { font-size: 12px; color: #a8b2c8; margin-top: 4px; line-height: 1.4; }
-  
-  .modal-bg {
-    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7); z-index: 100; padding: 16px;
-    overflow-y: auto; -webkit-overflow-scrolling: touch;
-  }
-  .modal-bg.show { display: block; }
-  .modal {
-    background: #1a1f3a; border-radius: 12px; padding: 16px;
-    max-width: 600px; margin: 20px auto; border: 1px solid #3a4070;
-  }
-  .modal h2 {
-    margin: 0 0 4px; font-size: 16px; color: #ffd700;
-    font-family: ui-monospace, monospace;
-  }
-  .modal .desc { font-size: 13px; color: #a8b2c8; margin-bottom: 14px; line-height: 1.5; }
-  .field { margin-bottom: 12px; }
-  .field-label {
-    font-size: 12px; color: #8892b0; margin-bottom: 4px;
-    display: flex; justify-content: space-between;
-  }
-  .field-label .required { color: #ff6b9d; }
-  .field-label .type { color: #64ffda; font-family: ui-monospace, monospace; }
-  .field input, .field textarea {
-    width: 100%; background: #0a0e27; color: #e4e6f0;
-    border: 1px solid #3a4070; padding: 10px 12px; border-radius: 8px;
-    font-size: 16px; -webkit-appearance: none; font-family: inherit;
-  }
-  .field textarea { min-height: 80px; resize: vertical; }
-  
-  button {
-    background: #2a3050; color: #e4e6f0; border: 1px solid #3a4070;
-    padding: 12px 14px; border-radius: 8px; font-size: 14px;
-    width: 100%; margin-top: 8px; cursor: pointer;
-    -webkit-appearance: none; font-weight: 500;
-  }
-  button:active { background: #3a4070; }
-  button.primary { background: #ffd700; color: #0a0e27; font-weight: 600; border: none; }
-  button.secondary { background: transparent; border-color: #3a4070; }
-  
-  .result {
-    margin-top: 12px; padding: 12px; border-radius: 8px;
-    background: #050816; max-height: 50vh; overflow-y: auto;
+  #chat {
+    flex: 1; overflow-y: auto; padding: 16px 12px;
     -webkit-overflow-scrolling: touch;
   }
-  .result.success { border-left: 3px solid #64ffda; }
-  .result.error { border-left: 3px solid #ff6b9d; }
-  .result-text {
-    color: #e4e6f0; white-space: pre-wrap; word-break: break-word;
-    font-size: 14px; line-height: 1.5;
+  
+  .msg { margin-bottom: 14px; display: flex; flex-direction: column; }
+  .msg.user { align-items: flex-end; }
+  .msg.assistant { align-items: flex-start; }
+  
+  .bubble {
+    max-width: 88%; padding: 10px 14px; border-radius: 16px;
+    line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+    font-size: 15px;
   }
-  .result-text.mono { font-family: ui-monospace, monospace; font-size: 12px; color: #64ffda; }
-  .result-toggle {
-    font-size: 12px; color: #8892b0; cursor: pointer; margin-top: 8px;
-    text-decoration: underline;
+  .user .bubble {
+    background: #ffd700; color: #0a0e27;
+    border-bottom-right-radius: 4px;
+  }
+  .assistant .bubble {
+    background: #1a1f3a; color: #e4e6f0; border: 1px solid #2a3050;
+    border-bottom-left-radius: 4px;
   }
   
-  .loading { color: #ffd700; padding: 20px; text-align: center; }
-  .empty { color: #8892b0; padding: 20px; text-align: center; font-size: 13px; }
+  .tool-call {
+    background: #050816; border: 1px solid #2a3050;
+    border-radius: 8px; padding: 8px 10px; margin-top: 6px;
+    font-size: 12px; color: #64ffda; font-family: ui-monospace, monospace;
+    max-width: 88%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .tool-call .label { color: #8892b0; margin-bottom: 2px; }
+  .tool-call pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+  
+  .thinking {
+    color: #8892b0; font-style: italic; font-size: 13px;
+    padding: 4px 14px;
+  }
+  
+  footer {
+    padding: 10px 12px; background: #1a1f3a;
+    border-top: 1px solid #2a3050; flex-shrink: 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .input-row { display: flex; gap: 8px; }
+  textarea {
+    flex: 1; background: #0a0e27; color: #e4e6f0;
+    border: 1px solid #3a4070; padding: 10px 12px; border-radius: 20px;
+    font-size: 16px; -webkit-appearance: none; resize: none;
+    min-height: 40px; max-height: 120px; font-family: inherit;
+    line-height: 1.4;
+  }
+  button {
+    background: #ffd700; color: #0a0e27; border: none;
+    width: 44px; height: 44px; border-radius: 50%;
+    font-size: 20px; cursor: pointer; flex-shrink: 0;
+    -webkit-appearance: none; font-weight: 600;
+  }
+  button:disabled { background: #3a4070; color: #8892b0; }
+  
+  .examples {
+    display: flex; gap: 6px; overflow-x: auto; padding: 0 0 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .examples::-webkit-scrollbar { display: none; }
+  .example-chip {
+    background: #2a3050; color: #64ffda; border: 1px solid #3a4070;
+    padding: 6px 12px; border-radius: 16px; font-size: 13px;
+    white-space: nowrap; cursor: pointer; flex-shrink: 0;
+  }
+  .example-chip:active { background: #3a4070; }
 </style>
 </head>
 <body>
 
-<h1>🌟 Twinkle Hub 探索器</h1>
-<div class="sub">點工具 → 填參數 → 看結果</div>
+<header>
+  <h1>🌟 Twinkle 小幫手</h1>
+  <div class="sub">用中文問,AI 自動查 Twinkle Hub</div>
+</header>
 
-<div class="search-bar">
-  <input type="text" id="searchInput" placeholder="🔍 搜尋工具(例如:民國、身分證、樂透)">
-</div>
+<div id="chat">
+  <div class="msg assistant">
+    <div class="bubble">嗨!我可以幫你查詢台灣政府開放資料、地理資訊、政府採購、實價登錄、判決書、立法院議案等等。
 
-<div id="toolsContainer">
-  <div class="loading">載入工具清單中...</div>
-</div>
-
-<div class="modal-bg" id="modalBg">
-  <div class="modal">
-    <h2 id="modalName"></h2>
-    <div class="desc" id="modalDesc"></div>
-    <div id="modalFields"></div>
-    <button class="primary" id="btnCall">🚀 呼叫</button>
-    <button class="secondary" id="btnClose">關閉</button>
-    <div id="modalResult"></div>
+直接用中文問我就好,例如:
+• 找台北市信義區的避難所
+• 國防部去年的決標金額前 10 大
+• 紀文惠法官最近的判決</div>
   </div>
 </div>
 
+<footer>
+  <div class="examples" id="examples">
+    <div class="example-chip">高雄市今天有什麼活動</div>
+    <div class="example-chip">台中市的健保藥局</div>
+    <div class="example-chip">立法院本屆民法相關議案</div>
+    <div class="example-chip">附近的寺廟(請給我座標)</div>
+    <div class="example-chip">最近的實價登錄</div>
+  </div>
+  <div class="input-row">
+    <textarea id="input" placeholder="輸入問題..." rows="1"></textarea>
+    <button id="send">➤</button>
+  </div>
+</footer>
+
 <script>
-var WORKER = 'https://twinklehub.kftseng2oo1.workers.dev';
-var allTools = [];
-var currentTool = null;
+var TWINKLE_WORKER = 'https://twinklehub.kftseng2oo1.workers.dev';
+var ARCAR_WORKER = 'https://arcar.kftseng2oo1.workers.dev'; // Claude API proxy
+var MAX_ITERATIONS = 8; // 防無窮迴圈
+var conversationHistory = [];
+var toolsCache = null;
+
+var chatEl = document.getElementById('chat');
+var inputEl = document.getElementById('input');
+var sendBtn = document.getElementById('send');
+
+// 自動 resize textarea
+inputEl.addEventListener('input', function() {
+  this.style.height = '40px';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+// 範例 chip 點擊
+document.querySelectorAll('.example-chip').forEach(function(chip) {
+  chip.addEventListener('click', function() {
+    inputEl.value = this.textContent;
+    inputEl.dispatchEvent(new Event('input'));
+    inputEl.focus();
+  });
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function addMessage(role, text) {
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = '<div class="bubble">' + escapeHtml(text) + '</div>';
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return div;
+}
+
+function addThinking(text) {
+  var div = document.createElement('div');
+  div.className = 'thinking';
+  div.textContent = '⚡ ' + text;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return div;
+}
+
+function addToolCall(name, args, result) {
+  var div = document.createElement('div');
+  div.className = 'msg assistant';
+  var html = '<div class="tool-call">';
+  html += '<div class="label">🔧 呼叫 ' + escapeHtml(name) + '</div>';
+  html += '<pre>' + escapeHtml(JSON.stringify(args, null, 2)) + '</pre>';
+  if (result !== undefined) {
+    html += '<div class="label" style="margin-top:6px;">📦 結果</div>';
+    var resultStr = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+    if (resultStr.length > 500) resultStr = resultStr.slice(0, 500) + '...(已截斷)';
+    html += '<pre>' + escapeHtml(resultStr) + '</pre>';
+  }
+  html += '</div>';
+  div.innerHTML = html;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
 
 // 載入工具清單
 function loadTools() {
-  fetch(WORKER + '/tools')
+  if (toolsCache) return Promise.resolve(toolsCache);
+  return fetch(TWINKLE_WORKER + '/tools')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.result && data.result.tools) {
-        allTools = data.result.tools;
-        renderTools('');
-      } else {
-        document.getElementById('toolsContainer').innerHTML =
-          '<div class="empty">無法取得工具清單<br><pre>' +
-          JSON.stringify(data, null, 2) + '</pre></div>';
+        toolsCache = data.result.tools;
+        return toolsCache;
       }
-    })
-    .catch(function(err) {
-      document.getElementById('toolsContainer').innerHTML =
-        '<div class="empty">錯誤:' + err.message + '</div>';
+      throw new Error('無法取得工具清單');
     });
 }
 
-// 把工具分群(用 prefix 前綴)
-function groupTools(tools) {
-  var groups = {};
-  tools.forEach(function(t) {
-    var prefix = t.name.split(/[-_]/)[0];
-    if (!groups[prefix]) groups[prefix] = [];
-    groups[prefix].push(t);
+// 把 Twinkle 工具轉成 Claude API 的 tools 格式
+function twinkleToClaudeTools(twinkleTools) {
+  return twinkleTools.map(function(t) {
+    return {
+      name: t.name.replace(/-/g, '_'), // Claude tool 名稱限制
+      description: (t.description || '').slice(0, 1024),
+      input_schema: t.inputSchema || { type: 'object', properties: {} }
+    };
   });
-  return groups;
 }
 
-function renderTools(filter) {
-  var keyword = filter.toLowerCase().trim();
-  var filtered = allTools;
-  if (keyword) {
-    filtered = allTools.filter(function(t) {
-      return t.name.toLowerCase().indexOf(keyword) !== -1 ||
-             (t.description || '').toLowerCase().indexOf(keyword) !== -1;
-    });
-  }
+// 呼叫 Twinkle 工具
+function callTwinkleTool(name, args) {
+  // 還原工具名稱
+  var realName = name.replace(/_/g, '-');
+  // 但 search_datasets 這類本身有底線的要保留 — 我們用映射表
+  var toolMatch = toolsCache.filter(function(t) {
+    return t.name.replace(/-/g, '_') === name;
+  })[0];
+  if (toolMatch) realName = toolMatch.name;
   
-  if (filtered.length === 0) {
-    document.getElementById('toolsContainer').innerHTML =
-      '<div class="empty">找不到符合的工具</div>';
-    return;
-  }
-  
-  var groups = groupTools(filtered);
-  var html = '';
-  Object.keys(groups).sort().forEach(function(g) {
-    html += '<div class="group">';
-    html += '<div class="group-header">' + g +
-            ' <span class="count">' + groups[g].length + ' 個工具</span></div>';
-    groups[g].forEach(function(t) {
-      var desc = (t.description || '').replace(/\*\*/g, '').slice(0, 80);
-      html += '<div class="tool" data-name="' + t.name + '">';
-      html += '<div class="tool-name">' + t.name + '</div>';
-      html += '<div class="tool-desc">' + desc + '</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  });
-  document.getElementById('toolsContainer').innerHTML = html;
-  
-  // 綁定點擊事件
-  var els = document.querySelectorAll('.tool');
-  for (var i = 0; i < els.length; i++) {
-    els[i].addEventListener('click', function() {
-      openTool(this.getAttribute('data-name'));
-    });
-  }
-}
-
-// 開啟工具細節 modal,自動依 schema 生成欄位
-function openTool(name) {
-  var tool = allTools.filter(function(t) { return t.name === name; })[0];
-  if (!tool) return;
-  currentTool = tool;
-  
-  document.getElementById('modalName').textContent = tool.name;
-  document.getElementById('modalDesc').textContent = (tool.description || '').replace(/\*\*/g, '');
-  document.getElementById('modalResult').innerHTML = '';
-  
-  var schema = tool.inputSchema || {};
-  var props = schema.properties || {};
-  var required = schema.required || [];
-  
-  var fieldsHtml = '';
-  Object.keys(props).forEach(function(key) {
-    var p = props[key];
-    var isReq = required.indexOf(key) !== -1;
-    var typeStr = p.type || 'string';
-    if (p.enum) typeStr = 'enum: ' + p.enum.join(' | ');
-    
-    fieldsHtml += '<div class="field">';
-    fieldsHtml += '<div class="field-label">';
-    fieldsHtml += '<span>' + key + (isReq ? ' <span class="required">*</span>' : '') +
-                  (p.description ? ' — ' + p.description.slice(0, 50) : '') + '</span>';
-    fieldsHtml += '<span class="type">' + typeStr + '</span>';
-    fieldsHtml += '</div>';
-    
-    var inputType = 'text';
-    if (p.type === 'number' || p.type === 'integer') inputType = 'number';
-    
-    var defaultVal = p.default !== undefined ? p.default : '';
-    if (p.type === 'object' || p.type === 'array') {
-      fieldsHtml += '<textarea data-field="' + key + '" data-type="' + p.type + '" placeholder="JSON 格式">' +
-                    (defaultVal ? JSON.stringify(defaultVal) : '') + '</textarea>';
-    } else {
-      fieldsHtml += '<input type="' + inputType + '" data-field="' + key +
-                    '" data-type="' + p.type + '" value="' + defaultVal + '">';
-    }
-    fieldsHtml += '</div>';
-  });
-  
-  if (Object.keys(props).length === 0) {
-    fieldsHtml = '<div class="empty">這個工具不需要參數</div>';
-  }
-  
-  document.getElementById('modalFields').innerHTML = fieldsHtml;
-  document.getElementById('modalBg').classList.add('show');
-  window.scrollTo(0, 0);
-}
-
-function closeTool() {
-  document.getElementById('modalBg').classList.remove('show');
-  currentTool = null;
-}
-
-function callTool() {
-  if (!currentTool) return;
-  
-  // 收集所有欄位值
-  var args = {};
-  var inputs = document.querySelectorAll('#modalFields [data-field]');
-  for (var i = 0; i < inputs.length; i++) {
-    var key = inputs[i].getAttribute('data-field');
-    var type = inputs[i].getAttribute('data-type');
-    var val = inputs[i].value.trim();
-    if (val === '') continue;
-    
-    if (type === 'number' || type === 'integer') {
-      args[key] = parseFloat(val);
-    } else if (type === 'object' || type === 'array') {
-      try { args[key] = JSON.parse(val); }
-      catch (e) { args[key] = val; }
-    } else if (type === 'boolean') {
-      args[key] = val === 'true';
-    } else {
-      args[key] = val;
-    }
-  }
-  
-  var resultDiv = document.getElementById('modalResult');
-  resultDiv.innerHTML = '<div class="result"><div class="loading">呼叫中...</div></div>';
-  
-  fetch(WORKER + '/call', {
+  return fetch(TWINKLE_WORKER + '/call', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: currentTool.name, arguments: args })
+    body: JSON.stringify({ name: realName, arguments: args })
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
-    renderResult(data);
-  })
-  .catch(function(err) {
-    resultDiv.innerHTML = '<div class="result error"><div class="result-text">錯誤:' +
-                          err.message + '</div></div>';
-  });
-}
-
-// 智慧型結果渲染
-function renderResult(data) {
-  var resultDiv = document.getElementById('modalResult');
-  var isError = data && data.result && data.result.isError;
-  var cls = isError ? 'error' : 'success';
-  
-  // 嘗試擷取最有用的文字內容
-  var mainText = '';
-  if (data && data.result && data.result.content) {
-    var contents = data.result.content;
-    for (var i = 0; i < contents.length; i++) {
-      if (contents[i].type === 'text') {
-        mainText += contents[i].text + '\n';
-      }
+    if (data && data.result && data.result.content) {
+      var text = '';
+      data.result.content.forEach(function(c) {
+        if (c.type === 'text') text += c.text + '\n';
+      });
+      return text.trim();
     }
-  } else if (data && data.error) {
-    mainText = 'JSON-RPC 錯誤:' + (data.error.message || JSON.stringify(data.error));
-  }
-  
-  // 試試看 mainText 是不是 JSON,如果是就 pretty print
-  var displayText = mainText.trim();
-  var isJson = false;
-  try {
-    var parsed = JSON.parse(displayText);
-    displayText = JSON.stringify(parsed, null, 2);
-    isJson = true;
-  } catch (e) { /* 不是 JSON 就保持原樣 */ }
-  
-  var html = '<div class="result ' + cls + '">';
-  if (displayText) {
-    html += '<div class="result-text' + (isJson ? ' mono' : '') + '">' +
-            escapeHtml(displayText) + '</div>';
-  } else {
-    html += '<div class="result-text mono">' + escapeHtml(JSON.stringify(data, null, 2)) + '</div>';
-  }
-  html += '<div class="result-toggle" id="toggleRaw">顯示原始 JSON</div>';
-  html += '<div class="result-text mono" id="rawJson" style="display:none;margin-top:8px;">' +
-          escapeHtml(JSON.stringify(data, null, 2)) + '</div>';
-  html += '</div>';
-  
-  resultDiv.innerHTML = html;
-  
-  document.getElementById('toggleRaw').addEventListener('click', function() {
-    var raw = document.getElementById('rawJson');
-    raw.style.display = raw.style.display === 'none' ? 'block' : 'none';
-    this.textContent = raw.style.display === 'none' ? '顯示原始 JSON' : '隱藏原始 JSON';
+    return JSON.stringify(data);
   });
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// 呼叫 Claude API(透過你的 arcar proxy)
+function callClaude(messages, tools) {
+  return fetch(ARCAR_WORKER, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2048,
+      system: '你是台灣資料查詢小幫手,可以使用 Twinkle Hub 的工具查詢台灣政府開放資料、地理資訊、政府採購、實價登錄、判決書、立法院議案等。' +
+              '請用繁體中文回答,簡潔扼要。' +
+              '挑工具時請先讀工具描述,選最適合的 fast-path 工具(例如查實價登錄用 query_rows("lvr-trades", ...) 而不是 search_datasets)。' +
+              '查詢結果太長時請摘要重點,不要全文貼出。',
+      messages: messages,
+      tools: tools
+    })
+  })
+  .then(function(r) { return r.json(); });
 }
 
-// 事件綁定
-document.getElementById('searchInput').addEventListener('input', function() {
-  renderTools(this.value);
-});
-document.getElementById('btnCall').addEventListener('click', callTool);
-document.getElementById('btnClose').addEventListener('click', closeTool);
-document.getElementById('modalBg').addEventListener('click', function(e) {
-  if (e.target === this) closeTool();
+// 主對話循環
+function chat(userText) {
+  inputEl.disabled = true;
+  sendBtn.disabled = true;
+  
+  addMessage('user', userText);
+  conversationHistory.push({ role: 'user', content: userText });
+  
+  var thinking = addThinking('載入工具中...');
+  
+  loadTools()
+    .then(function(tools) {
+      var claudeTools = twinkleToClaudeTools(tools);
+      thinking.textContent = '⚡ Claude 思考中...';
+      return iterate(claudeTools, 0);
+    })
+    .catch(function(err) {
+      thinking.remove();
+      addMessage('assistant', '❌ 錯誤:' + err.message);
+    })
+    .then(function() {
+      if (thinking.parentNode) thinking.remove();
+      inputEl.disabled = false;
+      sendBtn.disabled = false;
+      inputEl.focus();
+    });
+}
+
+function iterate(claudeTools, depth) {
+  if (depth >= MAX_ITERATIONS) {
+    addMessage('assistant', '⚠️ 達到最大查詢次數,請重新提問或縮小範圍');
+    return Promise.resolve();
+  }
+  
+  return callClaude(conversationHistory, claudeTools)
+    .then(function(response) {
+      if (!response || !response.content) {
+        throw new Error('Claude 沒有回應:' + JSON.stringify(response));
+      }
+      
+      // 收集本輪的文字與工具呼叫
+      var textParts = [];
+      var toolUses = [];
+      response.content.forEach(function(block) {
+        if (block.type === 'text') textParts.push(block.text);
+        if (block.type === 'tool_use') toolUses.push(block);
+      });
+      
+      // 顯示 Claude 的文字回應
+      if (textParts.length > 0) {
+        addMessage('assistant', textParts.join('\n'));
+      }
+      
+      // 把 assistant 的回應加進歷史
+      conversationHistory.push({ role: 'assistant', content: response.content });
+      
+      // 如果沒有工具呼叫,結束
+      if (toolUses.length === 0) {
+        return;
+      }
+      
+      // 執行所有工具呼叫
+      var toolResults = [];
+      var promise = Promise.resolve();
+      toolUses.forEach(function(tu) {
+        promise = promise.then(function() {
+          return callTwinkleTool(tu.name, tu.input)
+            .then(function(result) {
+              addToolCall(tu.name, tu.input, result);
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: tu.id,
+                content: result
+              });
+            })
+            .catch(function(err) {
+              addToolCall(tu.name, tu.input, '錯誤:' + err.message);
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: tu.id,
+                content: '錯誤:' + err.message,
+                is_error: true
+              });
+            });
+        });
+      });
+      
+      return promise.then(function() {
+        // 把工具結果加進歷史,繼續下一輪
+        conversationHistory.push({ role: 'user', content: toolResults });
+        return iterate(claudeTools, depth + 1);
+      });
+    });
+}
+
+sendBtn.addEventListener('click', function() {
+  var text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = '';
+  inputEl.style.height = '40px';
+  chat(text);
 });
 
-// 啟動
-loadTools();
+inputEl.addEventListener('keydown', function(e) {
+  // Enter 送出(Shift+Enter 換行)
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendBtn.click();
+  }
+});
 </script>
 
 </body>
