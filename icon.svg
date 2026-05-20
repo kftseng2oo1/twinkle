@@ -1,0 +1,15 @@
+<svg id="svgMain" width="512" height="512" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" id="sStart" stop-color="#D4D486"></stop>
+            <stop offset="100%" id="sEnd" stop-color="#243ec2"></stop>
+          </linearGradient>
+          <filter id="fShadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="0.5" stdDeviation="0.8" flood-color="rgba(0,0,0,0.7)"></feDropShadow>
+          </filter>
+        </defs>
+        <rect id="elRect" x="0.5" y="0.5" width="23" height="23" rx="5.88" ry="5.88" fill="#fd0839" stroke="#ffffff" stroke-width="0.8"></rect>
+        <circle id="elCirc" cx="12" cy="12" r="11.5" fill="#8d8eff" style="display:none"></circle>
+        <path id="elGeo" d="M12.000,3.500L13.627,5.398L15.950,4.474L16.509,6.910L18.995,7.171L18.358,9.589L20.438,10.975L18.750,12.820L19.948,15.014L17.596,15.863L17.637,18.362L15.160,18.021L14.034,20.253L12.000,18.800L9.966,20.253L8.840,18.021L6.363,18.362L6.404,15.863L4.052,15.014L5.250,12.820L3.562,10.975L5.642,9.589L5.005,7.171L7.491,6.910L8.050,4.474L10.373,5.398Z" fill="url(#g1)"></path>
+        <g id="elSlot"><text x="12" y="12" dy="0.38em" text-anchor="middle" font-weight="900" font-size="3.39" fill="#FFFFFF">TWK</text></g>
+      </svg>
