@@ -27,6 +27,47 @@
   }
 
   .panel { background: white; margin: 12px; border-radius: 14px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+
+  /* AI 搜尋框 */
+  .ai-search { margin: 12px; }
+  .ai-box {
+    display: flex; align-items: center; gap: 8px; background: white;
+    border: 2px solid transparent; border-radius: 14px; padding: 4px 4px 4px 14px;
+    box-shadow: 0 2px 16px rgba(37,99,235,0.18);
+    background-image: linear-gradient(white, white), linear-gradient(135deg, #2563eb, #8b5cf6, #ec4899);
+    background-origin: border-box; background-clip: padding-box, border-box;
+  }
+  .ai-box .ai-icon { font-size: 18px; }
+  .ai-box input {
+    flex: 1; border: none; background: transparent; padding: 10px 4px;
+    font-size: 16px; -webkit-appearance: none; outline: none;
+  }
+  .ai-box button {
+    background: linear-gradient(135deg, #2563eb, #8b5cf6); color: white; border: none;
+    padding: 10px 18px; border-radius: 10px; font-size: 15px; font-weight: 600;
+    cursor: pointer; -webkit-appearance: none; flex-shrink: 0;
+  }
+  .ai-box button:disabled { background: #94a3b8; }
+  .ai-examples { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; -webkit-overflow-scrolling: touch; }
+  .ai-examples::-webkit-scrollbar { display: none; }
+  .ai-chip {
+    background: white; color: #7c3aed; border: 1px solid #e9d5ff; padding: 6px 12px;
+    border-radius: 16px; font-size: 13px; white-space: nowrap; cursor: pointer; flex-shrink: 0;
+  }
+  .ai-chip:active { background: #f3e8ff; }
+
+  .ai-chat { margin: 0 12px; }
+  .ai-bubble {
+    background: #f0f4ff; border-left: 3px solid #8b5cf6; padding: 12px 14px;
+    border-radius: 10px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; color: #1e293b;
+  }
+  .ai-bubble.parsing { color: #8b5cf6; font-style: italic; }
+  .ai-bubble .filters-applied {
+    margin-top: 8px; font-size: 12px; color: #64748b; display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .ai-bubble .filters-applied .f {
+    background: #ede9fe; color: #7c3aed; padding: 2px 8px; border-radius: 6px;
+  }
   .field { margin-bottom: 12px; }
   .field label { display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
   select, input {
@@ -134,6 +175,23 @@
   </div>
   <button class="fav-btn" id="favBtn">⭐ 收藏 (<span id="favCount">0</span>)</button>
 </header>
+
+<!-- AI 語意搜尋框 -->
+<div class="ai-search">
+  <div class="ai-box">
+    <span class="ai-icon">✨</span>
+    <input type="text" id="aiInput" placeholder="試試：北屯區2000萬以下有電梯的大樓">
+    <button id="aiBtn">問</button>
+  </div>
+  <div class="ai-examples" id="aiExamples">
+    <span class="ai-chip">大安區3房1500-2500萬</span>
+    <span class="ai-chip">北屯區30坪以上透天</span>
+    <span class="ai-chip">信義區屋齡10年內</span>
+  </div>
+</div>
+
+<!-- AI 對話顯示區 -->
+<div class="ai-chat" id="aiChat"></div>
 
 <div class="panel">
   <div class="row">
@@ -568,6 +626,221 @@ function search() {
     });
 }
 searchBtn.addEventListener('click', search);
+
+// ════════════════════════════════════════════════════════════════
+//  AI 語意搜尋(Gemini 當翻譯官,只解析參數,不碰原始資料)
+// ════════════════════════════════════════════════════════════════
+var aiInput = document.getElementById('aiInput');
+var aiBtn = document.getElementById('aiBtn');
+var aiChat = document.getElementById('aiChat');
+
+// Gemini function calling 工具定義(參考對接規格,但 city 用中文)
+var AI_TOOL = {
+  name: 'set_filters',
+  description: '把使用者的房價查詢需求轉成結構化篩選參數。',
+  parameters: {
+    type: 'OBJECT',
+    properties: {
+      city: { type: 'STRING', description: '縣市完整名稱,用正體字,例如「臺中市」「臺北市」「新北市」「高雄市」。台→臺。' },
+      district: { type: 'STRING', description: '行政區名稱含「區/市/鄉」,例如「北屯區」「大安區」。' },
+      maxPrice: { type: 'NUMBER', description: '總價上限,單位「萬元」。例如 2000 萬填 2000。' },
+      minArea: { type: 'NUMBER', description: '最小坪數(權狀),單位坪。' },
+      maxAge: { type: 'NUMBER', description: '最大屋齡,單位年。例如「10年內」填 10。' },
+      propertyType: { type: 'STRING', description: '建物型態。', enum: ['住宅大樓', '公寓', '透天', '套房'] },
+      elevator: { type: 'STRING', description: '電梯需求。', enum: ['有', '無'] }
+    },
+    required: ['city']
+  }
+};
+
+function addAiBubble(text, cls) {
+  var div = document.createElement('div');
+  div.className = 'ai-bubble' + (cls ? ' ' + cls : '');
+  div.innerHTML = text;
+  aiChat.appendChild(div);
+  return div;
+}
+
+function callGemini(body) {
+  return fetch(WORKER + '/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); });
+}
+
+// 把 AI 解析的參數套到表單 UI 上
+function applyAiFilters(args) {
+  var applied = [];
+  if (args.city && TW[args.city]) {
+    cityEl.value = args.city; updateDistricts(); applied.push('縣市:' + args.city);
+  }
+  if (args.district) {
+    // 確認該區存在於選單
+    var opt = Array.prototype.filter.call(districtEl.options, function(o){ return o.value === args.district; })[0];
+    if (opt) { districtEl.value = args.district; applied.push('行政區:' + args.district); }
+  }
+  if (args.maxPrice) {
+    priceMax.value = Math.min(args.maxPrice, 10000);
+    priceMax.dispatchEvent(new Event('input')); applied.push('總價≤' + args.maxPrice + '萬');
+  }
+  if (args.minArea) {
+    areaMin.value = Math.min(args.minArea, 100);
+    areaMin.dispatchEvent(new Event('input')); applied.push('坪數≥' + args.minArea);
+  }
+  if (args.maxAge) {
+    ageMax.value = Math.min(args.maxAge, 50);
+    ageMax.dispatchEvent(new Event('input')); applied.push('屋齡≤' + args.maxAge + '年');
+  }
+  if (args.propertyType) {
+    advFilters.type = args.propertyType;
+    setChipActive('typeChips', 'data-type', args.propertyType); applied.push(args.propertyType);
+  }
+  if (args.elevator) {
+    advFilters.elevator = args.elevator;
+    setChipActive('elevatorChips', 'data-ele', args.elevator); applied.push('電梯:' + args.elevator);
+  }
+  // 展開進階面板讓使用者看到套用的條件
+  if (applied.length > 2) {
+    document.getElementById('advPanel').classList.add('show');
+    document.getElementById('advArrow').textContent = '▲';
+  }
+  return applied;
+}
+
+function setChipActive(groupId, attr, value) {
+  var group = document.getElementById(groupId);
+  group.querySelectorAll('.chip').forEach(function(c) {
+    c.classList.toggle('active', c.getAttribute(attr) === value);
+  });
+}
+
+// 主流程:白話 → Gemini 解析 → 套用 → 查詢 → Gemini 總結
+function aiAsk(question) {
+  aiChat.innerHTML = '';
+  aiInput.disabled = true; aiBtn.disabled = true; aiBtn.textContent = '...';
+  var thinking = addAiBubble('✨ 正在理解你的需求...', 'parsing');
+
+  // 第一步:Gemini 解析參數
+  callGemini({
+    model: 'gemini-2.5-flash',
+    contents: [{ role: 'user', parts: [{ text: question }] }],
+    tools: [{ functionDeclarations: [AI_TOOL] }],
+    toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: ['set_filters'] } },
+    systemInstruction: { parts: [{ text: '你是台灣房地產查詢助手。把使用者的白話需求轉成 set_filters 參數。縣市名稱一律用正體字(臺非台)。' }] }
+  })
+  .then(function(resp) {
+    if (resp.error) throw new Error(resp.error.message || JSON.stringify(resp.error));
+    var cand = resp.candidates && resp.candidates[0];
+    var parts = (cand && cand.content && cand.content.parts) || [];
+    var fc = null;
+    parts.forEach(function(p) { if (p.functionCall) fc = p.functionCall; });
+
+    if (!fc || !fc.args) {
+      thinking.className = 'ai-bubble';
+      thinking.textContent = '我不太確定你的需求,試試「北屯區2000萬以下的大樓」這樣的句子,或直接用下方選單。';
+      return null;
+    }
+
+    var args = fc.args;
+    if (!args.city) {
+      thinking.className = 'ai-bubble';
+      thinking.textContent = '請告訴我想查哪個縣市哦,例如「台中北屯區...」。';
+      return null;
+    }
+
+    var applied = applyAiFilters(args);
+    thinking.className = 'ai-bubble';
+    thinking.innerHTML = '✨ 了解!幫你查 <b>' + (args.city || '') + (args.district || '') + '</b> 的物件' +
+      '<div class="filters-applied">' +
+      applied.map(function(a){ return '<span class="f">' + a + '</span>'; }).join('') +
+      '</div>';
+
+    // 第二步:用解析的參數打 /lvr(零 token)
+    return doAiSearch(args);
+  })
+  .catch(function(err) {
+    thinking.className = 'ai-bubble';
+    thinking.textContent = '❌ AI 解析失敗:' + err.message;
+  })
+  .then(function() {
+    aiInput.disabled = false; aiBtn.disabled = false; aiBtn.textContent = '問';
+  });
+}
+
+// 用 AI 參數查詢 + 渲染 + 摘要
+function doAiSearch(args) {
+  var qs = '?city=' + encodeURIComponent(cityEl.value) +
+           '&district=' + encodeURIComponent(districtEl.value) + '&limit=50';
+  toolbar.style.display = 'none';
+  return fetch(WORKER + '/lvr' + qs)
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (!data.success || !data.results || data.results.length === 0) {
+        addAiBubble('這個範圍目前查無資料,換個區域或放寬條件試試?');
+        currentResults = []; resultsEl.innerHTML = '<div class="empty">查無資料</div>';
+        return;
+      }
+      currentResults = data.results;
+      toolbar.style.display = 'flex';
+      setView('list');
+      refreshDisplay();
+
+      // 第三步:把「摘要數字」(非原始資料)給 Gemini 寫總結 — token 極省
+      var shown = getDisplayRows();
+      summarizeWithAI(args, shown);
+    });
+}
+
+// 只把統計摘要給 AI,不給原始資料(避免 token 爆量)
+function summarizeWithAI(args, rows) {
+  if (rows.length === 0) return;
+  var prices = rows.map(function(r){ return r.totalPrice; }).filter(Boolean);
+  var perpings = rows.map(function(r){ return r.pricePerPing; }).filter(Boolean);
+  var avgPrice = Math.round(prices.reduce(function(a,b){return a+b;},0)/prices.length/10000);
+  var avgPerping = Math.round(perpings.reduce(function(a,b){return a+b;},0)/perpings.length/10000*10)/10;
+  var maxP = Math.round(Math.max.apply(null,prices)/10000);
+  var minP = Math.round(Math.min.apply(null,prices)/10000);
+
+  var summary = '查詢 ' + cityEl.value + districtEl.value + ',符合條件 ' + rows.length +
+    ' 筆。平均總價 ' + avgPrice + ' 萬,平均單價 ' + avgPerping + ' 萬/坪,' +
+    '最高 ' + maxP + ' 萬,最低 ' + minP + ' 萬。';
+
+  var bubble = addAiBubble('✨ 分析中...', 'parsing');
+  callGemini({
+    model: 'gemini-2.5-flash',
+    contents: [{ role: 'user', parts: [{ text:
+      '使用者問:「' + aiInput.value + '」\n查詢結果摘要:' + summary +
+      '\n請用 2-3 句溫暖專業的繁體中文總結這個區域的行情,給購屋者參考。不要列清單,卡片已顯示在下方。' }] }]
+  })
+  .then(function(resp) {
+    var cand = resp.candidates && resp.candidates[0];
+    var text = '';
+    if (cand && cand.content && cand.content.parts) {
+      cand.content.parts.forEach(function(p){ if (p.text) text += p.text; });
+    }
+    bubble.className = 'ai-bubble';
+    bubble.textContent = text.trim() || summary;
+  })
+  .catch(function() {
+    bubble.className = 'ai-bubble';
+    bubble.textContent = summary; // AI 掛了至少顯示數字摘要
+  });
+}
+
+aiBtn.addEventListener('click', function() {
+  var q = aiInput.value.trim();
+  if (q) aiAsk(q);
+});
+aiInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); aiBtn.click(); }
+});
+document.getElementById('aiExamples').addEventListener('click', function(e) {
+  if (e.target.classList.contains('ai-chip')) {
+    aiInput.value = e.target.textContent;
+    aiBtn.click();
+  }
+});
 
 // ── 收藏檢視 ──
 document.getElementById('favBtn').addEventListener('click', function() {
