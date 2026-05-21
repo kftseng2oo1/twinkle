@@ -106,6 +106,10 @@
   .card .perping { font-size: 13px; color: #2563eb; font-weight: 600; }
   .card .meta { display: flex; flex-wrap: wrap; gap: 6px; }
   .card .tag { font-size: 12px; background: #eff3fb; color: #475569; padding: 3px 8px; border-radius: 6px; }
+  .card .tag-indoor { background: #dcfce7; color: #15803d; font-weight: 600; }
+  .card .park { margin-top: 8px; font-size: 13px; color: #475569; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; }
+  .card .adj-price { margin-top: 6px; font-size: 12px; color: #64748b; }
+  .card .adj-price b { color: #2563eb; }
   .card .note { margin-top: 8px; font-size: 12px; color: #b45309; background: #fef3c7; padding: 6px 10px; border-radius: 6px; line-height: 1.4; }
   .card .heart {
     position: absolute; top: 12px; right: 12px; font-size: 22px; cursor: pointer;
@@ -433,12 +437,26 @@ function renderList(rows) {
     html += '</div><div class="meta">';
     if (r.type)     html += '<span class="tag">' + r.type + '</span>';
     if (r.layout)   html += '<span class="tag">' + r.layout + '</span>';
-    if (r.areaPing) html += '<span class="tag">' + r.areaPing + ' 坪</span>';
+    if (r.areaPing) html += '<span class="tag">權狀 ' + r.areaPing + ' 坪</span>';
+    if (r.indoorPing) html += '<span class="tag tag-indoor">室內 ' + r.indoorPing + ' 坪</span>';
+    if (r.publicRatio) html += '<span class="tag">公設 ' + r.publicRatio + '%</span>';
     if (r.floor)    html += '<span class="tag">' + r.floor + (r.totalFloor ? '/' + r.totalFloor : '') + '</span>';
     if (age !== null) html += '<span class="tag">屋齡 ' + age + ' 年</span>';
     if (r.tradeDate) html += '<span class="tag">' + r.tradeDate + '</span>';
     if (r.hasElevator) html += '<span class="tag">電梯' + r.hasElevator + '</span>';
     html += '</div>';
+    // 車位資訊
+    if (r.parkType || r.parkPrice) {
+      html += '<div class="park">🚗 ' + (r.parkType || '車位');
+      if (r.parkPing) html += ' · ' + r.parkPing + ' 坪';
+      if (r.parkPrice) html += ' · ' + fmtPrice(r.parkPrice) + ' 元';
+      html += '</div>';
+    }
+    // 扣車位後房屋實際均價(差異明顯才顯示)
+    if (r.pricePerPingNoPark && r.pricePerPing &&
+        Math.abs(r.pricePerPingNoPark - r.pricePerPing) > 10000) {
+      html += '<div class="adj-price">扣車位實際均價 <b>' + fmtPerPing(r.pricePerPingNoPark) + '</b></div>';
+    }
     if (r.isSpecial) html += '<div class="note">⚠️ ' + r.note + '</div>';
     html += '</div>';
   });
