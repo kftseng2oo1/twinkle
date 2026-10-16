@@ -1,44 +1,17 @@
-# TWINKLE
+# 🏠 房價儀表板（TWINKLE）
 
-> TWINKLE
+查詢台灣實價登錄成交資料，用列表或地圖瀏覽，並可用自然語言請 AI 幫忙篩選與總結。
 
-## 📦 包含檔案
+**線上使用**：https://kftseng2oo1.github.io/twinkle/
 
-- `icon-192.png`
-- `icon-512.png`
-- `manifest.json`
-- `sw.js`
-- `index.html`
-- `icon.svg`
-- `icon-maskable.svg`
-- `offline.html`
+## 主要功能
+- 選擇縣市、行政區查詢（台北、新北、台中、高雄等）
+- KPI 卡片：成交筆數、平均總價、平均單價（每坪）等
+- ☰ 列表／🗺️ 地圖 兩種檢視，可排序與篩選，顯示屋齡
+- ⭐ 收藏物件
+- **問 AI**：用一句話描述條件（例如「北屯三房 2000 萬內」），AI 轉成篩選條件並總結結果
 
-## 🚀 部署到 GitHub Pages
-
-```bash
-git init
-git add .
-git commit -m "init: TWINKLE PWA"
-git branch -M main
-git remote add origin https://github.com/<username>/<repo>.git
-git push -u origin main
-```
-
-然後在 GitHub repo → **Settings → Pages** → Source 選 `main` 分支，等待幾分鐘後即可訪問。
-
-## 📱 安裝 PWA
-
-在支援的瀏覽器（Chrome / Edge / Safari iOS）中打開網頁，  
-點擊「**安裝**」或「**加入主畫面**」即可將此 App 安裝到裝置。
-
-## ⚙ 技術規格
-
-| 項目 | 值 |
-|------|-----|
-| display | standalone |
-| theme_color | #1a73e8 |
-| lang | zh-TW |
-| scope | /twinkle/ |
-
----
-*由 [PWA 打包神器](https://github.com) 自動生成*
+## 技術與依賴
+- 單檔 HTML PWA（`index.html` 內含全部 HTML/CSS/JS），`manifest.json` + `sw.js` 提供安裝到主畫面與離線快取。
+- 後端：`twinklehub.kftseng2oo1.workers.dev`（成交資料與 Gemini AI）
+- 地圖：Leaflet（cdnjs）
